@@ -9,6 +9,7 @@ import requests
 import uuid
 import time
 import json
+import threading
 
 
 vcenterinfo ={
@@ -63,32 +64,55 @@ def contactus(request):
     return render_mako_context(request, '/home_application/contact.html')
 
 
-def hostcreate(hostname, ip, templateid, hostgroupid, port):
+def hello(vm):
+
+    print vm
+
+
+def hostcreate(vm_id):
     """
     创建主机
     """
+    time.sleep(2)
     try:
-        kwargs = {
-            "app_code": default.APP_ID,
-            "app_secret": default.APP_TOKEN,
-            "username": "admin",
-            "hostips": ip,
-            "hostgroupids": hostgroupid,
-            "templateids": templateid,
-            "host": hostname,
-            "port": port
-        }
+        for i in range(5):
+            response = requests.get("https://api.starbucks.net/auth", auth=('S-Cmdbcn', 'K{RTOLtTP^*Muc#'),
+                                    verify=False)
+            token = response.headers['x-api-key']
+            headers = {'Authorization': token, 'accept': 'application/json'}
+            res = requests.get("https://api.starbucks.net/bean-api/api/v1/server/verde/" + str(vm_id), headers=headers,
+                               verify=False)
+            info = res['data']
+            try:
+                hostname = info['hostname']
+                ip = info['ipAddress']
+                kwargs = {
+                    "app_code": default.APP_ID,
+                    "app_secret": default.APP_TOKEN,
+                    "username": "admin",
+                    "hostips": ip,
+                    "hostgroupids": 1,
+                    "templateids": 10050,
+                    "host": hostname,
+                    "port": 10050
+                }
 
-        client = get_client_by_user("admin")
-        res = client.zabbix.host_create(kwargs)
-        info = res['data']
-        hostids = info['hostids'][0]
-        logger.info(hostids)
-        return hostids
+                client = get_client_by_user("admin")
+                res = client.zabbix.host_create(kwargs)
+                info = res['data']
+                hostids = info['hostids'][0]
+                logger.info(hostids)
+                # return hostids
+            except:
+                continue
+            # else:
+
+                # return hostids
+
     except Exception as e:
         logger.error(e)
-        hostids = 'faild'
-        return hostids
+        # hostids = 'failed'
+        # return hostids
 
 
 @login_exempt
@@ -118,28 +142,13 @@ def add_vm(request):
             vm_id = res.json()[0]['id']
             res = requests.get("https://api.starbucks.net/bean-api/api/v1/server/verde/" + str(vm_id), headers=headers,
                                verify=False)
-            info = res.json()['data']
-            hostname = info['hostname']
-            ip = info['ipAddress']
-            try:
-                templateid = info['templateid']
-            except:
-                templateid = 10050
-            try:
-                hostgroupid = info['hostgroupid']
-            except:
-                hostgroupid = 1
-            try:
-                port = info['port']
-            except:
-                port = 10050
-            hostid =hostcreate(hostname, ip, templateid, hostgroupid, port)
-
+            t = threading.Thread(target=hostcreate(vm_id))
+            t.start()
             return render_json({
                 "data": res.json(),
                 "bk_status": True,
                 "Message": u"成功",
-                "hostid": hostid
+                "vm_id": vm_id
             })
         except Exception as e:
             return render_json({
@@ -193,6 +202,7 @@ def vcenter(request, vm_id):
         })
 
     if request.method == "DELETE":
+        logger.info(vm_id)
         if not vm_id:
             return render_json({
                 "data": "",
@@ -203,8 +213,8 @@ def vcenter(request, vm_id):
             response = requests.get("https://api.starbucks.net/auth", auth=('S-Cmdbcn', 'K{RTOLtTP^*Muc#'), verify=False)
             token = response.headers['x-api-key']
             headers = {'Authorization': token, 'accept': 'application/json'}
-            data = request.POST['data']
-            logger.info(data)
+            # data = request.POST['data']
+            # logger.info(data)
             res = requests.delete("https://api.starbucks.net/bean-api/api/v1/server/verde/" + vm_id, headers=headers,
                                   verify=False)
             return render_json({

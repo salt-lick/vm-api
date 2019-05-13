@@ -193,13 +193,13 @@ def add_vm(request):
 
 @login_exempt
 def vcenter(request, vm_id):
-    if request.method == 'GET':
-        response = requests.get("https://api.starbucks.net/auth", auth=('S-Cmdbcn', 'K{RTOLtTP^*Muc#'), verify=False)
-        token = response.headers['x-api-key']
-        return render_json({
-            "result": "ok",
-            "token": token
-        })
+    # if request.method == 'GET':
+    #     response = requests.get("https://api.starbucks.net/auth", auth=('S-Cmdbcn', 'K{RTOLtTP^*Muc#'), verify=False)
+    #     token = response.headers['x-api-key']
+    #     return render_json({
+    #         "result": "ok",
+    #         "token": token
+    #     })
 
     if request.method == "DELETE":
         logger.info(vm_id)
@@ -215,10 +215,11 @@ def vcenter(request, vm_id):
             headers = {'Authorization': token, 'accept': 'application/json'}
             # data = request.POST['data']
             # logger.info(data)
+            logger.info(json.dumps(headers))
             res = requests.delete("https://api.starbucks.net/bean-api/api/v1/server/verde/" + vm_id, headers=headers,
                                   verify=False)
             return render_json({
-                "data": res.json()['data'],
+                "data": res.json(),
                 "bk_status": True,
                 "Message": u"成功"
             })

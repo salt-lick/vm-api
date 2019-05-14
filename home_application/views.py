@@ -142,13 +142,12 @@ def add_vm(request):
             vm_id = res.json()[0]['id']
             res = requests.get("https://api.starbucks.net/bean-api/api/v1/server/verde/" + str(vm_id), headers=headers,
                                verify=False)
-            t = threading.Thread(target=hostcreate(vm_id))
-            t.start()
+            # t = threading.Thread(target=hostcreate(vm_id))
+            # t.start()
             return render_json({
                 "data": res.json(),
                 "bk_status": True,
-                "Message": u"成功",
-                "vm_id": vm_id
+                "Message": u"成功"
             })
         except Exception as e:
             return render_json({
@@ -213,8 +212,8 @@ def vcenter(request, vm_id):
             response = requests.get("https://api.starbucks.net/auth", auth=('S-Cmdbcn', 'K{RTOLtTP^*Muc#'), verify=False)
             token = response.headers['x-api-key']
             headers = {'Authorization': token, 'accept': 'application/json'}
-            # data = request.POST['data']
-            # logger.info(data)
+            data = request.POST['data']
+            logger.info(data)
             logger.info(token)
             res = requests.delete("https://api.starbucks.net/bean-api/api/v1/server/verde/" + vm_id, headers=headers,
                                   verify=False)
